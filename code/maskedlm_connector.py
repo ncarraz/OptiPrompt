@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from base_connector import *
 import torch.nn.functional as F
-from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModelForSeq2SeqLM
+from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModelForSeq2SeqLM, AutoConfig
 import random
 
 
@@ -12,29 +12,21 @@ class MaskedLM(Base_Connector):
     def __init__(self, args):
         super().__init__()
 
-        random.seed(args.seed)
-        torch.manual_seed(args.seed)
-        torch.cuda.manual_seed(args.seed)
-        if torch.cuda.device_count() > 1:
-            torch.cuda.manual_seed_all(args.seed)
-
         self.model_name = args.model_name
         self.tokenization = TOKENIZATION[self.model_name]
         self.model_type = LM_TYPE[self.model_name]
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.config = AutoConfig.from_pretrained(self.model_name)
         self._init_vocab() # Compatibility with existing code
         
         if self.model_type == "seq2seq":
             self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
-            self.mask = "<extra_id_0>" # for t5 only for now 
+            self.MASK = "<extra_id_0>" # for t5 only for now 
         elif self.model_type == "masked":
-            self.mask = self.tokenizer.mask_token
+            self.MASK = self.tokenizer.mask_token
             self.model = AutoModelForMaskedLM.from_pretrained(self.model_name)
         self.model.eval() # EVAL ONLY ?
 
-        self.mlm_model = self.model 
-        self.base_model = self.model.bert
-        self.MASK = self.tokenizer.mask_token
         self.EOS = self.tokenizer.eos_token
         self.CLS = self.tokenizer.cls_token
         self.SEP = self.tokenizer.sep_token

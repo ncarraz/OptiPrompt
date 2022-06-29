@@ -37,7 +37,7 @@ def convert_manual_to_dense(manual_template, model):
         id_a = model.tokenizer.convert_tokens_to_ids([new_token])[0]
         id_b = model.tokenizer.convert_tokens_to_ids([token])[0]
         with torch.no_grad():
-            model.base_model.embeddings.word_embeddings.weight[id_a] = model.base_model.embeddings.word_embeddings.weight[id_b].detach().clone()
+            model.embeddings.weight[id_a] = model.embeddings.weight[id_b].detach().clone()
 
     new_token_id = 0
     template = []
@@ -64,12 +64,12 @@ def init_template(args, model):
 def prepare_for_dense_prompt(model):
     new_tokens = [get_new_token(i+1) for i in range(MAX_NUM_VECTORS)]
     model.tokenizer.add_tokens(new_tokens)
-    ebd = model.mlm_model.resize_token_embeddings(len(model.tokenizer))
+    ebd = model.model.resize_token_embeddings(len(model.tokenizer))
     logger.info('# vocab after adding new tokens: %d'%len(model.tokenizer))
 
 def save_optiprompt(args, model, original_vocab_size):
     logger.info("Saving OptiPrompt's [V]s..")
-    vs = model.base_model.embeddings.word_embeddings.weight[original_vocab_size:].detach().cpu().numpy()
+    vs = model.embeddings.weight[original_vocab_size:].detach().cpu().numpy()
     with open(os.path.join(args.output_dir, 'prompt_vecs.npy'), 'wb') as f:
         np.save(f, vs)
 
@@ -86,7 +86,7 @@ def load_optiprompt(args):
     
     # copy fine-tuned new_tokens to the pre-trained model
     with torch.no_grad():
-        model.base_model.embeddings.word_embeddings.weight[original_vocab_size:] = torch.Tensor(vs)
+        model.embeddings.weight[original_vocab_size:] = torch.Tensor(vs)
     return model
 
 if __name__ == "__main__":
@@ -149,6 +149,7 @@ if __name__ == "__main__":
     original_vocab_size = len(list(model.tokenizer.get_vocab()))
     logger.info('Original vocab size: %d'%original_vocab_size)
     prepare_for_dense_prompt(model)
+    model.update_embeddings()
 
     if args.common_vocab_filename is not None:
         vocab_subset = load_vocab(args.common_vocab_filename)
@@ -159,7 +160,7 @@ if __name__ == "__main__":
         index_list = None
 
     if n_gpu > 1:
-        model.mlm_model = torch.nn.DataParallel(model.mlm_model)
+        model.model = torch.nn.DataParallel(model.model)
 
     template = init_template(args, model)
     logger.info('Template: %s'%template)
@@ -178,7 +179,7 @@ if __name__ == "__main__":
         save_optiprompt(args, model, original_vocab_size)
 
         # Add word embeddings to the optimizer
-        optimizer = AdamW([{'params': model.base_model.embeddings.word_embeddings.parameters()}], lr=args.learning_rate, correct_bias=False)
+        optimizer = AdamW([{'params': model.embeddings.parameters()}], lr=args.learning_rate, correct_bias=False)
         t_total = len(train_samples_batches) * args.num_epoch
         scheduler = get_linear_schedule_with_warmup(optimizer, int(t_total*args.warmup_proportion), t_total)
 
@@ -207,7 +208,7 @@ if __name__ == "__main__":
                 global_step += 1
 
                 # set normal tokens' gradients to be zero
-                for p in model.base_model.embeddings.word_embeddings.parameters():
+                for p in model.embeddings.parameters():
                     # only update new tokens
                     p.grad[:original_vocab_size, :] = 0.0
 

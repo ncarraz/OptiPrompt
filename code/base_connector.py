@@ -56,6 +56,19 @@ class Base_Connector():
         """
         pass
 
+    def update_embeddings(self):
+        """Returns the wordpiece embedding module."""
+        if self.config.model_type == "bart":
+            embeddings = self.model.model.encoder.embed_tokens
+        elif self.config.model_type == "gpt2":
+            embeddings = self.model.transformer.wte
+        elif self.config.model_type == "t5":
+            embeddings = self.model.encoder.embed_tokens
+        else:
+            base_model = getattr(self.model, self.config.model_type)
+            embeddings = base_model.embeddings.word_embeddings
+        self.embeddings = embeddings
+
     def _init_inverse_vocab(self):
         self.inverse_vocab = {w: i for i, w in enumerate(self.vocab)}
     
