@@ -338,7 +338,6 @@ class Prober():
             self.try_cuda()
 
         tokens_tensor, segments_tensor, attention_mask_tensor, masked_indices_list, tokenized_text_list, mlm_labels_tensor, mlm_label_ids = self._get_input_tensors_batch_train(sentences_list, samples_list)
-
         if training:
             self.mlm_model.train()
             loss = self.mlm_model(

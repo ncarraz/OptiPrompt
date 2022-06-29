@@ -10,6 +10,7 @@ import torch
 from torch import optim
 
 from models import Prober
+from maskedlm_connector import MaskedLM
 from utils import load_vocab, load_data, batchify, evaluate, get_relation_meta
 
 import numpy as np
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 def get_new_token(vid):
     assert(vid > 0 and vid <= MAX_NUM_VECTORS)
-    return '[V%d]'%(vid)
+    return ' [V%d]'%(vid)
 
 def convert_manual_to_dense(manual_template, model):
     def assign_embedding(new_token, token):
@@ -74,7 +75,8 @@ def save_optiprompt(args, model, original_vocab_size):
 
 def load_optiprompt(args):
     # load bert model (pre-trained)
-    model = Prober(args, random_init=args.random_init)
+    # model = Prober(args, random_init=args.random_init)
+    model = MaskedLM(args)
     original_vocab_size = len(list(model.tokenizer.get_vocab()))
     prepare_for_dense_prompt(model)
     
@@ -142,7 +144,8 @@ if __name__ == "__main__":
     if torch.cuda.device_count() > 1:
         torch.cuda.manual_seed_all(args.seed)
 
-    model = Prober(args, random_init=args.random_init)
+    #model = Prober(args, random_init=args.random_init)
+    model = MaskedLM(args)
     original_vocab_size = len(list(model.tokenizer.get_vocab()))
     logger.info('Original vocab size: %d'%original_vocab_size)
     prepare_for_dense_prompt(model)
