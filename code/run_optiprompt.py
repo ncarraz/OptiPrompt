@@ -66,6 +66,7 @@ def prepare_for_dense_prompt(model):
     model.tokenizer.add_tokens(new_tokens)
     ebd = model.model.resize_token_embeddings(len(model.tokenizer))
     logger.info('# vocab after adding new tokens: %d'%len(model.tokenizer))
+    model.update_embeddings()
 
 def save_optiprompt(args, model, original_vocab_size):
     logger.info("Saving OptiPrompt's [V]s..")
@@ -149,7 +150,6 @@ if __name__ == "__main__":
     original_vocab_size = len(list(model.tokenizer.get_vocab()))
     logger.info('Original vocab size: %d'%original_vocab_size)
     prepare_for_dense_prompt(model)
-    model.update_embeddings()
 
     if args.common_vocab_filename is not None:
         vocab_subset = load_vocab(args.common_vocab_filename)
