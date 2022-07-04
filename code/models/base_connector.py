@@ -1,5 +1,7 @@
-import re
 import torch
+import torch.nn.functional as F
+import numpy as np
+import pandas as pd
 
 TOKENIZATION = {
     "roberta-base":"bpe",
@@ -18,7 +20,8 @@ TOKENIZATION = {
     "gpt2":"bpe",
     "xlnet-base-cased":"sentencepiece",
     "xlnet-large-cased":"sentencepiece",
-    "transfo-xl-wt103":"word"
+    "transfo-xl-wt103":"word",
+    "google/t5-v1_1-base":"sentencepiece"
 }
 
 LM_TYPE = {
@@ -37,7 +40,8 @@ LM_TYPE = {
      "facebook/bart-large":"masked",
      "t5-small":"seq2seq",
      "t5-base":"seq2seq",
-     "t5-large":"seq2seq"
+     "t5-large":"seq2seq",
+     "google/t5-v1_1-base":"seq2seq"
  }
 
 
@@ -136,3 +140,77 @@ class Base_Connector():
 
     def get_batch_generation(self, sentences_list, logger= None, try_cuda=True):
         raise NotImplementedError()
+    
+    def get_loss(self, predict_logits, label_ids):
+        predict_logp = F.log_softmax(predict_logits, dim=-1)
+        target_logp = predict_logp.gather(-1, label_ids)
+        target_logp = target_logp - 1e32 * label_ids.eq(0)  # Apply mask
+        target_logp = torch.logsumexp(target_logp, dim=-1)
+        return -target_logp
+    
+    def run_batch(self, sentences_list, samples_list, try_cuda=True, training=True, filter_indices=None, index_list=None, vocab_to_common_vocab=None):
+        if try_cuda and torch.cuda.device_count() > 0:
+            self.try_cuda()
+
+        input, masked_indices_list, labels_tensor, mlm_label_ids, predict_mask = self.get_input_tensors_batch_train(sentences_list, samples_list)
+
+        if training:
+            self.model.train()
+            output = self.model(**input.to(self._model_device))
+            logits = output.logits
+            predict_logits = logits.masked_select(predict_mask.to(self._model_device).unsqueeze(-1)).view(logits.size(0), -1)
+            loss = self.get_loss(predict_logits, torch.tensor(mlm_label_ids).unsqueeze(-1).to(self._model_device)).mean()
+        else:
+            self.model.eval()
+            with torch.no_grad():
+                output = self.model(**input.to(self._model_device))
+                logits = output.logits
+                predict_logits = logits.masked_select(predict_mask.to(self._model_device).unsqueeze(-1)).view(logits.size(0), -1)
+                loss = self.get_loss(predict_logits, torch.tensor(mlm_label_ids).unsqueeze(-1).to(self._model_device)).mean()
+                log_probs = F.log_softmax(logits, dim=-1).cpu()
+                pred_log_probs = F.log_softmax(predict_logits, dim=-1).cpu()
+
+        if training:
+            return loss
+        else:
+            # During testing, return accuracy and top-k predictions
+            tot = log_probs.shape[0]
+            cor = 0
+            preds = []
+            topk = []
+            common_vocab_loss = []
+
+            for i in range(log_probs.shape[0]):
+                masked_index = masked_indices_list[i][0]
+                #log_prob = log_probs[i][masked_index]
+                log_prob = pred_log_probs[i]
+                mlm_label = mlm_label_ids[i]
+                if filter_indices is not None:
+                    log_prob = log_prob.index_select(dim=0, index=filter_indices)
+                    pred_common_vocab = torch.argmax(log_prob)
+                    pred = index_list[pred_common_vocab]
+
+                    # get top-k predictions
+                    topk_preds = []
+                    topk_log_prob, topk_ids = torch.topk(log_prob, self.k)
+                    for log_prob_i, idx in zip(topk_log_prob, topk_ids):
+                        ori_idx = index_list[idx]
+                        token = self.vocab[ori_idx]
+                        topk_preds.append({'token': token, 'log_prob': log_prob_i.item()})
+                    topk.append(topk_preds)
+
+                    # compute entropy on common vocab
+                    common_logits = logits[i][masked_index].cpu().index_select(dim=0, index=filter_indices)
+                    common_log_prob = -F.log_softmax(common_logits, dim=-1)
+                    common_label_id = vocab_to_common_vocab[mlm_label]
+                    common_vocab_loss.append(common_log_prob[common_label_id].item())
+                else:
+                    pred = torch.argmax(log_prob)
+                    topk.append([])
+                if pred == labels_tensor[i][masked_index]:
+                    cor += 1
+                    preds.append(1)
+                else:
+                    preds.append(0)
+                            
+            return log_probs, cor, tot, preds, topk, loss, common_vocab_loss 

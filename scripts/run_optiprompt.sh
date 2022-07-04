@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MODEL=bert-base-cased
+MODEL=$1
 OUTPUTS_DIR=optiprompt-outputs/$MODEL
 RAND=none
 
@@ -21,7 +21,6 @@ for REL in P1001 P101 P103 P106 P108 P127 P1303 P131 P136 P1376 P138 P140 P1412 
         --test_data data/LAMA-TREx/${REL}.jsonl \
         --output_dir ${DIR} \
         --random_init ${RAND} \
-        --init_manual_template \
         --output_predictions 
 
 done

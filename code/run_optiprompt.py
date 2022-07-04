@@ -9,8 +9,7 @@ from tqdm import tqdm
 import torch
 from torch import optim
 
-from models import Prober
-from maskedlm_connector import MaskedLM
+from models import build_model_by_name
 from utils import load_vocab, load_data, batchify, evaluate, get_relation_meta
 
 import numpy as np
@@ -77,7 +76,7 @@ def save_optiprompt(args, model, original_vocab_size):
 def load_optiprompt(args):
     # load bert model (pre-trained)
     # model = Prober(args, random_init=args.random_init)
-    model = MaskedLM(args)
+    model = build_model_by_name(args)
     original_vocab_size = len(list(model.tokenizer.get_vocab()))
     prepare_for_dense_prompt(model)
     
@@ -119,7 +118,11 @@ if __name__ == "__main__":
     parser.add_argument('--relation', type=str, required=True, help='which relation is considered in this run')
     parser.add_argument('--init_manual_template', action='store_true', help='whether to use manual template to initialize the dense vectors')
     parser.add_argument('--random_init', type=str, default='none', choices=['none', 'embedding', 'all'], help='none: use pre-trained model; embedding: random initialize the embedding layer of the model; all: random initialize the whole model')
-    parser.add_argument('--num_vectors', type=int, default=5, help='how many dense vectors are used in OptiPrompt')
+    parser.add_argument('--num_vectors', type
+    
+    
+    
+    =int, default=5, help='how many dense vectors are used in OptiPrompt')
 
     parser.add_argument('--output_predictions', action='store_true', help='whether to output top-k predictions')
     parser.add_argument('--k', type=int, default=5, help='how many predictions will be outputted')
@@ -146,7 +149,7 @@ if __name__ == "__main__":
         torch.cuda.manual_seed_all(args.seed)
 
     #model = Prober(args, random_init=args.random_init)
-    model = MaskedLM(args)
+    model = build_model_by_name(args)
     original_vocab_size = len(list(model.tokenizer.get_vocab()))
     logger.info('Original vocab size: %d'%original_vocab_size)
     prepare_for_dense_prompt(model)
