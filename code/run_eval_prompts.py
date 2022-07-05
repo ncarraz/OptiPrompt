@@ -33,7 +33,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_name', type=str, default='bert-base-cased', help='the huggingface model name')
     parser.add_argument('--source_dir', type=str, default=None, help='the directory containing the saved promps')
-    parser.add_argument('--output_dir', type=str, default='results', help='the output directory to store the prediction results')
+    parser.add_argument('--target_dir', type=str, default='results', help='the output directory to store the prediction results')
     parser.add_argument('--common_vocab_filename', type=str, default='common_vocabs/common_vocab_cased.txt', help='common vocabulary of models (used to filter triples)')
     parser.add_argument('--relation_profile', type=str, default='relation_metainfo/LAMA_relations.jsonl', help='meta infomation of 41 relations, containing the pre-defined templates')
 
