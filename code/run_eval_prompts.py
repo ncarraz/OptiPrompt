@@ -44,7 +44,6 @@ if __name__ == "__main__":
 
     parser.add_argument('--random_init', type=str, default='none', choices=['none', 'embedding', 'all'], help='none: use pre-trained model; embedding: random initialize the embedding layer of the model; all: random initialize the whole model')
 
-    parser.add_argument('--output_predictions', action='store_true', help='whether to output top-k predictions')
     parser.add_argument('--num_vectors', type=int, default=5, help='how many dense vectors are used in OptiPrompt')
     parser.add_argument('--init_manual_template', action='store_true', help='whether to use manual template to initialize the dense vectors')
     parser.add_argument('--k', type=int, default=5, help='how many predictions will be outputted')
@@ -98,4 +97,4 @@ if __name__ == "__main__":
         test_data = os.path.join(args.test_data_dir, relation + ".jsonl")
         eval_samples = load_data(test_data, template, vocab_subset=vocab_subset, mask_token=model.MASK)
         eval_samples_batches, eval_sentences_batches = batchify(eval_samples, args.eval_batch_size * n_gpu)
-        evaluate(model, eval_samples_batches, eval_sentences_batches, filter_indices, index_list, output_topk=target_dir if args.output_predictions else None)
+        evaluate(model, eval_samples_batches, eval_sentences_batches, filter_indices, index_list, output_topk=target_dir)
