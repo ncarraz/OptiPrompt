@@ -84,9 +84,9 @@ if __name__ == "__main__":
     for relation in os.listdir(args.test_data_dir):
         relation = relation.split(".")[0]
         print("RELATION {}".format(relation))
-        logger.addHandler(logging.FileHandler(os.path.join(target_dir, "eval.log"), 'w'))
 
         target_dir = os.path.join(args.target_dir, args.model_name.replace("/","_"), relation)
+        logger.addHandler(logging.FileHandler(os.path.join(target_dir, "eval.log"), 'w'))
         source_dir = os.path.join(args.source_dir, relation)
         os.makedirs(target_dir, exist_ok=True)
 
