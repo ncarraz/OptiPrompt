@@ -30,12 +30,12 @@ def convert_tokens_to_string(tokens):
     out_string = " ".join(tokens).replace(" ##", "").strip()
     return out_string
 
-def get_relation_meta(args):
+def get_relation_meta(args,relation_name):
     relations = load_file(args.relation_profile)
     for relation in relations:
-        if relation['relation'] == args.relation:
+        if relation['relation'] == relation_name:
             return relation
-    raise ValueError('Relation info %s not found in file %s'%(args.relation, args.relation_profile))
+    raise ValueError('Relation info %s not found in file %s'%(relation_name, args.relation_profile))
 
 def batchify(data, batch_size):
     list_samples_batches = []
