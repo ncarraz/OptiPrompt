@@ -16,7 +16,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     model = build_model_by_name(args)
     model.update_embeddings()
-    emb = model.embeddings
+    emb = model.embeddings.weight.detach().numpy()
     for f in os.listdir(args.input_dir):
         filepath = os.path.join(args.input_dir, f, "prompt_vecs.npy")
         with open(filepath, "rb") as f:
