@@ -30,12 +30,12 @@ def convert_tokens_to_string(tokens):
     out_string = " ".join(tokens).replace(" ##", "").strip()
     return out_string
 
-def get_relation_meta(args,relation_name):
-    relations = load_file(args.relation_profile)
+def get_relation_meta(prompt_file, relation_name):
+    relations = load_file(prompt_file)
     for relation in relations:
         if relation['relation'] == relation_name:
             return relation
-    raise ValueError('Relation info %s not found in file %s'%(relation_name, args.relation_profile))
+    raise ValueError('Relation info %s not found in file %s'%(relation_name, prompt_file))
 
 def batchify(data, batch_size):
     list_samples_batches = []
@@ -135,7 +135,7 @@ def evaluate(model, samples_batches, sentences_batches, filter_indices=None, ind
     if output_topk is not None:
         logger.info('Output top-k prediction to %s..'%output_topk)
         for rel in list_of_predictions:
-            with open(os.path.join(output_topk, '%s_predictions.jsonl'%rel), 'w') as f:
+            with open(os.path.join(output_topk, '%s.jsonl'%rel), 'w') as f:
                 f.write('\n'.join([json.dumps(x) for x in list_of_predictions[rel]]))
 
     micro, macro = output_result(result, eval_loss)

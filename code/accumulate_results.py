@@ -18,7 +18,7 @@ rel_avg = []
 for relation in relations:
     rel_tot = 0
     rel_cor = 0
-    samples = load_file(os.path.join(output_dir, '%s/%s_predictions.jsonl'%(relation, relation)))
+    samples = load_file(os.path.join(output_dir, '%s.jsonl'%(relation)))
     for sample in samples:
         if sample['obj_label'] == sample['topk'][0]['token']:
             rel_cor += 1
