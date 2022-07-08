@@ -33,5 +33,7 @@ for relation in relations:
 micro = sum(rel_avg) / len(rel_avg) * 100
 macro = cor / tot * 100
 
+with open("/homedtcl/nrakotonirina/OptiPrompt/results.txt", "a") as f:
+    f.write("{},{}\n".format(os.path.basename(output_dir),micro))
 print('Macro: %.2f\t(%d / %d)'%(macro, cor, tot))
 print('Micro: %.2f'%(micro))
