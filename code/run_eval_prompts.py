@@ -59,7 +59,7 @@ if __name__ == "__main__":
         relation = relation.split(".")[0]
         print("RELATION {}".format(relation))
 
-        output_dir = os.path.join(args.output_dir , args.model_name.replace("/","_"))
+        output_dir = os.path.join(args.output_dir, os.path.basename(args.prompt_file).split(".")[0],args.model_name.replace("/","_"))
         os.makedirs(output_dir , exist_ok=True)
 
         template = init_template(args.prompt_file, relation)
