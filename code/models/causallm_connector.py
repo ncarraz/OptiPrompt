@@ -89,5 +89,6 @@ class CausalLM(Base_Connector):
         last_trigger_mask[torch.arange(len(last_trigger_id)),last_trigger_id] = True
         labels_tensor[predict_mask] = torch.tensor(labels)
 
+        input["input_ids"] = torch.where(input.input_ids == self.tokenizer.mask_token_id, self.tokenizer.eos_token_id, input.input_ids)
         return input ,masked_indices_list, labels_tensor, labels.tolist(), last_trigger_mask
 
