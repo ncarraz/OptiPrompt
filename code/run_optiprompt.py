@@ -27,6 +27,31 @@ def get_new_token(vid):
     assert(vid > 0 and vid <= MAX_NUM_VECTORS)
     return ' [V%d]'%(vid)
 
+def convert_random_to_dense(model):
+    def assign_embedding(new_token, token):
+        """
+        assign the embedding of token to new_token
+        """
+        logger.info('Tie embeddings of tokens: (%s, %s)'%(new_token, token))
+        id_a = model.tokenizer.convert_tokens_to_ids([new_token])[0]
+        id_b = model.tokenizer.convert_tokens_to_ids([token])[0]
+        with torch.no_grad():
+            model.embeddings.weight[id_a] = model.embeddings.weight[id_b].detach().clone()
+
+    new_token_id = 0
+    template = []
+    emb_len = model.embeddings.weight.shape[0]
+    for i in range(5):
+        token_id = random.randint(0, emb_len)
+        token = model.tokenizer.decode(token_id)
+        print(token_id, token)
+        new_token_id += 1         
+        template.append(get_new_token(new_token_id))
+        assign_embedding(get_new_token(new_token_id), token)
+    template.insert(0, "[X]")
+    template.append("[Y]")
+    return ' '.join(template)
+
 def convert_manual_to_dense(manual_template, model):
     def assign_embedding(new_token, token):
         """
@@ -56,7 +81,11 @@ def init_template(args, model, relation_name):
     if args.init_manual_template:
         relation = get_relation_meta(args, relation_name)
         template = convert_manual_to_dense(relation['template'], model)
+    elif args.init_random:
+        print("INIT RANDOM WORDS")
+        template = convert_random_to_dense(model)
     else:
+        print("INIT RANDOM VECS")
         template = '[X] ' + ' '.join(['[V%d]'%(i+1) for i in range(args.num_vectors)]) + ' [Y] .'
     return template
 
@@ -113,6 +142,7 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=6)
 
     parser.add_argument('--init_manual_template', action='store_true', help='whether to use manual template to initialize the dense vectors')
+    parser.add_argument('--init_random', action='store_true', help='whether to use random words to initialize the dense vectors')
     parser.add_argument('--random_init', type=str, default='none', choices=['none', 'embedding', 'all'], help='none: use pre-trained model; embedding: random initialize the embedding layer of the model; all: random initialize the whole model')
     parser.add_argument('--num_vectors', type=int, default=5, help='how many dense vectors are used in OptiPrompt')
 

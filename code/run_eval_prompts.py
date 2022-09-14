@@ -46,6 +46,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--num_vectors', type=int, default=5, help='how many dense vectors are used in OptiPrompt')
     parser.add_argument('--init_manual_template', action='store_true', help='whether to use manual template to initialize the dense vectors')
+    parser.add_argument('--init_random', action='store_true', help='whether to use random words to initialize the dense vectors')
     parser.add_argument('--k', type=int, default=5, help='how many predictions will be outputted')
 
     args = parser.parse_args()
